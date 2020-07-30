@@ -593,6 +593,7 @@ public class PassiveRole extends InactiveRole {
     if (previousCommitIndex < commitIndex) {
       log.trace("Committed entries up to index {}", commitIndex);
       raft.getServiceManager().applyAll(commitIndex);
+      raft.notifyCommitListeners(commitIndex);
     }
 
     // Return a successful append response.

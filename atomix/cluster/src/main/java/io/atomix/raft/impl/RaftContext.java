@@ -50,11 +50,9 @@ import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.storage.log.RaftLogWriter;
-import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.storage.system.MetaStore;
 import io.atomix.raft.zeebe.EntryValidator;
 import io.atomix.storage.StorageException;
-import io.atomix.storage.journal.Indexed;
 import io.atomix.utils.concurrent.ComposableFuture;
 import io.atomix.utils.concurrent.SingleThreadContext;
 import io.atomix.utils.concurrent.ThreadContext;
@@ -338,8 +336,8 @@ public class RaftContext implements AutoCloseable {
    *
    * @param latestEntry latest committed entry
    */
-  public <T extends RaftLogEntry> void notifyCommitListeners(final Indexed<T> latestEntry) {
-    commitListeners.forEach(listener -> listener.onCommit(latestEntry));
+  public void notifyCommitListeners(final long lastCommitIndex) {
+    commitListeners.forEach(listener -> listener.onCommit(lastCommitIndex));
   }
 
   /**
