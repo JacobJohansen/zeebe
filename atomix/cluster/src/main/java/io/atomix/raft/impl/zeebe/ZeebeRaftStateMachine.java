@@ -192,7 +192,6 @@ public final class ZeebeRaftStateMachine implements RaftStateMachine {
     final var optionalFuture = Optional.ofNullable(future);
     logger.trace("Applying {}", indexed);
 
-    raft.notifyCommitListeners(indexed);
     optionalFuture.ifPresent(f -> f.complete(null));
 
     // mark as applied regardless of result
