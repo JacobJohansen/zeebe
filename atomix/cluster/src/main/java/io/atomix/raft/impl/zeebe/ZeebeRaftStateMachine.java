@@ -11,12 +11,9 @@ import io.atomix.raft.RaftStateMachine;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.metrics.RaftServiceMetrics;
 import io.atomix.raft.storage.log.RaftLogReader;
-import io.atomix.raft.storage.log.entry.RaftLogEntry;
-import io.atomix.storage.journal.Indexed;
 import io.atomix.utils.concurrent.ThreadContext;
 import io.atomix.utils.logging.ContextualLoggerFactory;
 import io.atomix.utils.logging.LoggerContext;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 
@@ -31,14 +28,10 @@ public final class ZeebeRaftStateMachine implements RaftStateMachine {
   // used when performing compaction; may be updated from a different thread
   private volatile long compactableIndex;
 
-  // represents the last enqueued index
-  private long lastEnqueued;
-
   public ZeebeRaftStateMachine(final RaftContext raft) {
     this.raft = raft;
     this.reader = raft.getLog().openReader(1, RaftLogReader.Mode.COMMITS);
 
-    this.lastEnqueued = reader.getFirstIndex() - 1;
     this.logger =
         ContextualLoggerFactory.getLogger(
             getClass(), LoggerContext.builder(getClass()).addValue(raft.getName()).build());
@@ -79,24 +72,13 @@ public final class ZeebeRaftStateMachine implements RaftStateMachine {
 
   @Override
   public void applyAll(final long index) {
-    raft.checkThread();
-    applyAll(index, null);
+    apply(index);
   }
 
   @Override
-  public <T> CompletableFuture<T> apply(final long index) {
+  public void apply(final long index) {
     raft.checkThread();
-    final var future = new CompletableFuture<T>();
-    applyAll(index, future);
-    return future;
-  }
-
-  @Override
-  public <T> CompletableFuture<T> apply(final Indexed<? extends RaftLogEntry> entry) {
-    raft.checkThread();
-    final CompletableFuture<T> future = new CompletableFuture<>();
-    applyIndexed(entry, future);
-    return future;
+    raft.setLastApplied(index);
   }
 
   @Override
@@ -116,12 +98,6 @@ public final class ZeebeRaftStateMachine implements RaftStateMachine {
     this.compactableIndex = index;
   }
 
-  @Override
-  public long getCompactableTerm() {
-    throw new UnsupportedOperationException(
-        "getCompactableTerm is not required by this implementation");
-  }
-
   private void compact(final long index, final CompletableFuture<Void> future) {
     try {
       final var startTime = System.currentTimeMillis();
@@ -132,69 +108,5 @@ public final class ZeebeRaftStateMachine implements RaftStateMachine {
       logger.error("Failed to compact up to index {}", index, e);
       future.completeExceptionally(e);
     }
-  }
-
-  private void applyAll(final long index, final CompletableFuture<?> future) {
-    lastEnqueued =
-        Math.max(lastEnqueued, raft.getPersistedSnapshotStore().getCurrentSnapshotIndex());
-    int chunkCounter = 0;
-    while (lastEnqueued < index && chunkCounter < 1000) {
-      chunkCounter++;
-      final long nextIndex = ++lastEnqueued;
-      applyIndex(nextIndex, future);
-
-      if (chunkCounter == 1000) {
-        executor().execute(() -> applyAll(index, future));
-      }
-    }
-  }
-
-  private void applyIndex(final long index, final CompletableFuture<?> future) {
-    final var optionalFuture = Optional.ofNullable(future);
-
-    // skip if we have a newer snapshot
-    if (raft.getPersistedSnapshotStore().getCurrentSnapshotIndex() >= index
-        || reader.getNextIndex() > index) {
-      optionalFuture.ifPresent(f -> f.complete(null));
-      return;
-    }
-
-    if (index > reader.getNextIndex()) {
-      reader.reset(index);
-    }
-
-    // Apply entries prior to this entry.
-    if (reader.hasNext() && reader.getNextIndex() == index) {
-      try {
-        applyIndexed(reader.next(), future);
-      } catch (final Exception e) {
-        logger.error("Failed to apply entry at index {}", index, e);
-        optionalFuture.ifPresent(f -> f.completeExceptionally(e));
-      }
-    } else if (reader.getNextIndex() < raft.getPersistedSnapshotStore().getCurrentSnapshotIndex()) {
-      reader.reset(raft.getPersistedSnapshotStore().getCurrentSnapshotIndex());
-    } else {
-      // in the case where we tried to apply indexes out of order
-      logger.error(
-          "Cannot apply index {}, expected next index is {} (has more entries: {})",
-          index,
-          reader.getNextIndex(),
-          reader.hasNext());
-      optionalFuture.ifPresent(
-          f ->
-              f.completeExceptionally(
-                  new IndexOutOfBoundsException("Cannot apply index " + index)));
-    }
-  }
-
-  private <T> void applyIndexed(
-      final Indexed<? extends RaftLogEntry> indexed, final CompletableFuture<T> future) {
-    final var optionalFuture = Optional.ofNullable(future);
-    logger.trace("Applying {}", indexed);
-
-    optionalFuture.ifPresent(f -> f.complete(null));
-
-    // mark as applied regardless of result
-    raft.setLastApplied(indexed.index(), indexed.entry().term());
   }
 }

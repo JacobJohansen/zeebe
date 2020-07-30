@@ -16,8 +16,6 @@
  */
 package io.atomix.raft;
 
-import io.atomix.raft.storage.log.entry.RaftLogEntry;
-import io.atomix.storage.journal.Indexed;
 import io.atomix.utils.concurrent.ThreadContext;
 import java.util.concurrent.CompletableFuture;
 
@@ -57,19 +55,7 @@ public interface RaftStateMachine extends AutoCloseable {
    * @param index The index to apply.
    * @return A completable future to be completed once the commit has been applied.
    */
-  <T> CompletableFuture<T> apply(long index);
-
-  /**
-   * Applies an entry to the state machine.
-   *
-   * <p>Calls to this method are assumed to expect a result. This means linearizable session events
-   * triggered by the application of the given entry will be awaited before completing the returned
-   * future.
-   *
-   * @param entry The entry to apply.
-   * @return A completable future to be completed with the result.
-   */
-  <T> CompletableFuture<T> apply(Indexed<? extends RaftLogEntry> entry);
+  void apply(long index);
 
   /**
    * Close any opened resources; note however that the thread context should NOT be closed, as it is
@@ -92,11 +78,4 @@ public interface RaftStateMachine extends AutoCloseable {
    * @param index index up to which the log can be compacted
    */
   default void setCompactableIndex(final long index) {}
-
-  /**
-   * Returns the term of the entry with the current compactable index.
-   *
-   * @return the term of the entry with the current compactable index
-   */
-  long getCompactableTerm();
 }
