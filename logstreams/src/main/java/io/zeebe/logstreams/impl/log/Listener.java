@@ -50,5 +50,6 @@ public final class Listener implements AppendListener {
 
   private void releaseBackPressure() {
     appender.releaseBackPressure(highestPosition);
+    appender.notifyCommitPosition(highestPosition);
   }
 }
