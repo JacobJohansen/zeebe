@@ -656,7 +656,7 @@ public final class RaftRule extends ExternalResource {
     public void onNewSnapshot(final PersistedSnapshot persistedSnapshot) {
       final var raftServer = servers.get(memberId.id());
       final var raftContext = raftServer.getContext();
-      final var serviceManager = raftContext.getServiceManager();
+      final var serviceManager = raftContext.getLogCompactor();
       serviceManager.setCompactableIndex(persistedSnapshot.getIndex());
 
       raftServer

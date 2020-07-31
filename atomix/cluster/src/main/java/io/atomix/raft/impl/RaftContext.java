@@ -865,7 +865,7 @@ public class RaftContext implements AutoCloseable {
    *
    * @return The server state machine.
    */
-  public LogCompactor getServiceManager() {
+  public LogCompactor getLogCompactor() {
     return logCompactor;
   }
 

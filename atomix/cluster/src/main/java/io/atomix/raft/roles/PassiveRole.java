@@ -699,7 +699,7 @@ public class PassiveRole extends InactiveRole {
       return false;
     } catch (final StorageException.OutOfDiskSpace e) {
       log.trace("Append failed: {}", e);
-      raft.getServiceManager().compact();
+      raft.getLogCompactor().compact();
       failAppend(index - 1, future);
       return false;
     }
