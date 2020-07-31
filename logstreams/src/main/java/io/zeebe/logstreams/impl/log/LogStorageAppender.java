@@ -52,7 +52,7 @@ public class LogStorageAppender extends Actor implements HealthMonitorable {
   private final LoggedEventImpl positionReader = new LoggedEventImpl();
   private FailureListener failureListener;
   private final ActorFuture<Void> closeFuture;
-  private final LongConsumer commitListener;
+  private final LongConsumer commitPositionListener;
 
   public LogStorageAppender(
       final String name,
@@ -60,8 +60,8 @@ public class LogStorageAppender extends Actor implements HealthMonitorable {
       final LogStorage logStorage,
       final Subscription writeBufferSubscription,
       final int maxBlockSize,
-      final LongConsumer commitListener) {
-    this.commitListener = commitListener;
+      final LongConsumer commitPositionListener) {
+    this.commitPositionListener = commitPositionListener;
     this.env = new Environment();
     this.name = name;
     this.logStorage = logStorage;
@@ -214,6 +214,6 @@ public class LogStorageAppender extends Actor implements HealthMonitorable {
   }
 
   void notifyCommitPosition(final long highestPosition) {
-    actor.run(() -> commitListener.accept(highestPosition));
+    actor.run(() -> commitPositionListener.accept(highestPosition));
   }
 }
