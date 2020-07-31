@@ -7,7 +7,6 @@
  */
 package io.atomix.raft.impl.zeebe;
 
-import io.atomix.raft.RaftStateMachine;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.metrics.RaftServiceMetrics;
 import io.atomix.raft.storage.log.RaftLogReader;
@@ -17,7 +16,7 @@ import io.atomix.utils.logging.LoggerContext;
 import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 
-public final class LogCompactor implements RaftStateMachine {
+public final class LogCompactor {
   private final RaftContext raft;
 
   // hard coupled state
@@ -38,7 +37,6 @@ public final class LogCompactor implements RaftStateMachine {
     this.metrics = new RaftServiceMetrics(raft.getName());
   }
 
-  @Override
   public ThreadContext executor() {
     return raft.getThreadContext();
   }
@@ -49,7 +47,6 @@ public final class LogCompactor implements RaftStateMachine {
    *
    * @return a future which is completed when the log has been compacted
    */
-  @Override
   public CompletableFuture<Void> compact() {
     raft.checkThread();
 
@@ -70,19 +67,16 @@ public final class LogCompactor implements RaftStateMachine {
     return CompletableFuture.completedFuture(null);
   }
 
-  @Override
   public void close() {
     raft.checkThread();
     logger.debug("Closing state machine {}", raft.getName());
     reader.close();
   }
 
-  @Override
   public long getCompactableIndex() {
     return compactableIndex;
   }
 
-  @Override
   public void setCompactableIndex(final long index) {
     this.compactableIndex = index;
   }

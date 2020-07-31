@@ -28,7 +28,6 @@ import io.atomix.raft.RaftException;
 import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer;
 import io.atomix.raft.RaftServer.Role;
-import io.atomix.raft.RaftStateMachine;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.cluster.impl.RaftClusterContext;
@@ -866,7 +865,7 @@ public class RaftContext implements AutoCloseable {
    *
    * @return The server state machine.
    */
-  public RaftStateMachine getServiceManager() {
+  public LogCompactor getServiceManager() {
     return logCompactor;
   }
 
