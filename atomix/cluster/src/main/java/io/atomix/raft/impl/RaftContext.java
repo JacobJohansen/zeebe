@@ -356,26 +356,9 @@ public class RaftContext implements AutoCloseable {
         cluster.commit();
       }
       setFirstCommitIndex(commitIndex);
+      setLastApplied(commitIndex);
     }
     return previousCommitIndex;
-  }
-
-  /**
-   * Sets the last applied index.
-   *
-   * @param lastApplied the last applied index and the last applied term
-   */
-  public void setLastApplied(final long lastApplied) {
-    if (state == State.ACTIVE && lastApplied >= firstCommitIndex) {
-      threadContext.execute(
-          () -> {
-            this.lastApplied = Math.max(this.lastApplied, lastApplied);
-            if (state == State.ACTIVE && this.lastApplied >= firstCommitIndex) {
-              state = State.READY;
-              stateChangeListeners.forEach(l -> l.accept(state));
-            }
-          });
-    }
   }
 
   /**
@@ -751,6 +734,19 @@ public class RaftContext implements AutoCloseable {
    */
   public long getLastApplied() {
     return lastApplied;
+  }
+
+  /**
+   * Sets the last applied index.
+   *
+   * @param lastApplied the last applied index and the last applied term
+   */
+  private void setLastApplied(final long lastApplied) {
+    this.lastApplied = Math.max(this.lastApplied, lastApplied);
+    if (state == State.ACTIVE && lastApplied >= firstCommitIndex) {
+      state = State.READY;
+      stateChangeListeners.forEach(l -> l.accept(state));
+    }
   }
 
   /**

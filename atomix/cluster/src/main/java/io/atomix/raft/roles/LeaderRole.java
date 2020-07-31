@@ -25,7 +25,6 @@ import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.cluster.impl.RaftMemberContext;
-import io.atomix.raft.impl.OperationResult;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.protocol.AppendRequest;
 import io.atomix.raft.protocol.AppendResponse;
@@ -375,7 +374,6 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
               raft.checkThread();
               if (isRunning()) {
                 if (error == null) {
-                  raft.getServiceManager().apply(resultIndex);
                   future.complete(null);
                 } else {
                   log.info("Failed to commit the initial entry, stepping down");
@@ -458,9 +456,6 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
                   .whenComplete(
                       (commitIndex, commitError) -> {
                         raft.checkThread();
-                        if (isRunning() && commitError == null) {
-                          raft.getServiceManager().<OperationResult>apply(entry.index());
-                        }
                         configuring = 0;
                       });
             });
@@ -726,7 +721,6 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
               // entries properly on fail over
               if (commitError == null) {
                 appendListener.onCommit(indexed);
-                raft.getServiceManager().apply(indexed.index());
                 raft.notifyCommitListeners(indexed.index());
               } else {
                 appendListener.onCommitError(indexed, commitError);

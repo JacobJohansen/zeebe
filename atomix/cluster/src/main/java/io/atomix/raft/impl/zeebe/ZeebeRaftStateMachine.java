@@ -71,17 +71,6 @@ public final class ZeebeRaftStateMachine implements RaftStateMachine {
   }
 
   @Override
-  public void applyAll(final long index) {
-    apply(index);
-  }
-
-  @Override
-  public void apply(final long index) {
-    raft.checkThread();
-    raft.setLastApplied(index);
-  }
-
-  @Override
   public void close() {
     raft.checkThread();
     logger.debug("Closing state machine {}", raft.getName());

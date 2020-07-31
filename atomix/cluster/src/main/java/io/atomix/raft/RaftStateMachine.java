@@ -36,28 +36,6 @@ public interface RaftStateMachine extends AutoCloseable {
   CompletableFuture<Void> compact();
 
   /**
-   * Applies all commits up to the given index.
-   *
-   * <p>Calls to this method are assumed not to expect a result. This allows some optimizations to
-   * be made internally since linearizable events don't have to be waited to complete the command.
-   *
-   * @param index The index up to which to apply commits.
-   */
-  void applyAll(long index);
-
-  /**
-   * Applies the entry at the given index to the state machine.
-   *
-   * <p>Calls to this method are assumed to expect a result. This means linearizable session events
-   * triggered by the application of the command at the given index will be awaited before
-   * completing the returned future.
-   *
-   * @param index The index to apply.
-   * @return A completable future to be completed once the commit has been applied.
-   */
-  void apply(long index);
-
-  /**
    * Close any opened resources; note however that the thread context should NOT be closed, as it is
    * managed by the Raft server.
    */
