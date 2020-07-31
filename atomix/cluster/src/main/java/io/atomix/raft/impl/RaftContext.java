@@ -29,10 +29,10 @@ import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.RaftStateMachine;
-import io.atomix.raft.RaftStateMachineFactory;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.cluster.impl.RaftClusterContext;
+import io.atomix.raft.impl.zeebe.LogCompactor;
 import io.atomix.raft.metrics.RaftRoleMetrics;
 import io.atomix.raft.protocol.RaftResponse;
 import io.atomix.raft.protocol.RaftServerProtocol;
@@ -96,7 +96,7 @@ public class RaftContext implements AutoCloseable {
   private final RaftLogWriter logWriter;
   private final RaftLogReader logReader;
   private final PersistedSnapshotStore persistedSnapshotStore;
-  private final RaftStateMachine stateMachine;
+  private final LogCompactor logCompactor;
   private final ThreadContextFactory threadContextFactory;
   private final ThreadContext loadContext;
   private final ThreadContext stateContext;
@@ -122,8 +122,7 @@ public class RaftContext implements AutoCloseable {
       final RaftServerProtocol protocol,
       final RaftStorage storage,
       final ThreadContextFactory threadContextFactory,
-      final boolean closeOnStop,
-      final RaftStateMachineFactory stateMachineFactory) {
+      final boolean closeOnStop) {
     this.name = checkNotNull(name, "name cannot be null");
     this.membershipService = checkNotNull(membershipService, "membershipService cannot be null");
     this.protocol = checkNotNull(protocol, "protocol cannot be null");
@@ -163,9 +162,7 @@ public class RaftContext implements AutoCloseable {
     // Open the snapshot store.
     this.persistedSnapshotStore = storage.getPersistedSnapshotStore();
 
-    // Create a new internal server state machine.
-    checkNotNull(stateMachineFactory, "stateMachineFactory must be not null");
-    this.stateMachine = stateMachineFactory.createStateMachine(this);
+    this.logCompactor = new LogCompactor(this);
 
     this.cluster = new RaftClusterContext(localMemberId, this);
 
@@ -368,7 +365,7 @@ public class RaftContext implements AutoCloseable {
    */
   public CompletableFuture<Void> compact() {
     final ComposableFuture<Void> future = new ComposableFuture<>();
-    threadContext.execute(() -> stateMachine.compact().whenComplete(future));
+    threadContext.execute(() -> logCompactor.compact().whenComplete(future));
     return future;
   }
 
@@ -578,7 +575,7 @@ public class RaftContext implements AutoCloseable {
 
     // Close the state machine and thread context.
     stateContext.close();
-    stateMachine.close();
+    logCompactor.close();
 
     // Close the log.
     try {
@@ -870,7 +867,7 @@ public class RaftContext implements AutoCloseable {
    * @return The server state machine.
    */
   public RaftStateMachine getServiceManager() {
-    return stateMachine;
+    return logCompactor;
   }
 
   /**

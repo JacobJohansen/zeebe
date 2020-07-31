@@ -17,7 +17,7 @@ import io.atomix.utils.logging.LoggerContext;
 import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 
-public final class ZeebeRaftStateMachine implements RaftStateMachine {
+public final class LogCompactor implements RaftStateMachine {
   private final RaftContext raft;
 
   // hard coupled state
@@ -28,7 +28,7 @@ public final class ZeebeRaftStateMachine implements RaftStateMachine {
   // used when performing compaction; may be updated from a different thread
   private volatile long compactableIndex;
 
-  public ZeebeRaftStateMachine(final RaftContext raft) {
+  public LogCompactor(final RaftContext raft) {
     this.raft = raft;
     this.reader = raft.getLog().openReader(1, RaftLogReader.Mode.COMMITS);
 
