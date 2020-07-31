@@ -74,10 +74,7 @@ public class RaftStorageTest {
   @Test
   public void testCustomConfiguration2() throws Exception {
     final RaftStorage storage =
-        RaftStorage.builder()
-            .withDirectory(PATH.toString() + "/baz")
-            .withFlushOnCommit()
-            .build();
+        RaftStorage.builder().withDirectory(PATH.toString() + "/baz").withFlushOnCommit().build();
     assertEquals(new File(PATH.toFile(), "baz"), storage.directory());
     assertTrue(storage.isFlushOnCommit());
   }
