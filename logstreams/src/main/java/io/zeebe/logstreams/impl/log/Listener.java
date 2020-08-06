@@ -38,6 +38,7 @@ public final class Listener implements AppendListener {
   @Override
   public void onCommit(final long address) {
     releaseBackPressure();
+    appender.notifyCommitPosition(highestPosition);
   }
 
   @Override
@@ -50,6 +51,5 @@ public final class Listener implements AppendListener {
 
   private void releaseBackPressure() {
     appender.releaseBackPressure(highestPosition);
-    appender.notifyCommitPosition(highestPosition);
   }
 }
