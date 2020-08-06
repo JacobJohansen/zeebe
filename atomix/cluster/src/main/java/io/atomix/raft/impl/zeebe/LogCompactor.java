@@ -69,7 +69,7 @@ public final class LogCompactor {
 
   public void close() {
     raft.checkThread();
-    logger.debug("Closing state machine {}", raft.getName());
+    logger.debug("Closing the log compactor {}", raft.getName());
     reader.close();
   }
 
