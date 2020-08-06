@@ -329,7 +329,7 @@ public class RaftContext implements AutoCloseable {
   /**
    * Notifies all listeners of the latest entry.
    *
-   * @param latestEntry latest committed entry
+   * @param lastCommitIndex index of the most recently committed entry
    */
   public void notifyCommitListeners(final long lastCommitIndex) {
     commitListeners.forEach(listener -> listener.onCommit(lastCommitIndex));
