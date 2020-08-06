@@ -109,7 +109,6 @@ public class RaftContext implements AutoCloseable {
   private MemberId lastVotedFor;
   private long commitIndex;
   private volatile long firstCommitIndex;
-  private long lastApplied;
   private volatile boolean started;
   private EntryValidator entryValidator;
 
@@ -352,7 +351,12 @@ public class RaftContext implements AutoCloseable {
         cluster.commit();
       }
       setFirstCommitIndex(commitIndex);
-      setLastApplied(commitIndex);
+      // On start up, set the state to READY after the follower has caught up with the leader
+      // https://github.com/zeebe-io/zeebe/issues/4877
+      if (state == State.ACTIVE && commitIndex >= firstCommitIndex) {
+        state = State.READY;
+        stateChangeListeners.forEach(l -> l.accept(state));
+      }
     }
     return previousCommitIndex;
   }
@@ -721,28 +725,6 @@ public class RaftContext implements AutoCloseable {
    */
   public void setEntryValidator(final EntryValidator validator) {
     this.entryValidator = validator;
-  }
-
-  /**
-   * Returns the last applied index.
-   *
-   * @return the last applied index
-   */
-  public long getLastApplied() {
-    return lastApplied;
-  }
-
-  /**
-   * Sets the last applied index.
-   *
-   * @param lastApplied the last applied index and the last applied term
-   */
-  private void setLastApplied(final long lastApplied) {
-    this.lastApplied = Math.max(this.lastApplied, lastApplied);
-    if (state == State.ACTIVE && lastApplied >= firstCommitIndex) {
-      state = State.READY;
-      stateChangeListeners.forEach(l -> l.accept(state));
-    }
   }
 
   /**

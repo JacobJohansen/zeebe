@@ -145,8 +145,7 @@ public class PassiveRole extends InactiveRole {
     // If the index has already been applied, we have enough state to populate the state machine up
     // to this index.
     // Skip the snapshot and response successfully.
-    // TODO: Does the following condition make sense?
-    if (raft.getLastApplied() > request.index()) {
+    if (raft.getCommitIndex() > request.index()) {
       return CompletableFuture.completedFuture(
           logResponse(InstallResponse.builder().withStatus(RaftResponse.Status.OK).build()));
     }
