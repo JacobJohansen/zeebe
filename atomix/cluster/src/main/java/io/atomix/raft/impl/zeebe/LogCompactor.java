@@ -73,10 +73,6 @@ public final class LogCompactor {
     reader.close();
   }
 
-  public long getCompactableIndex() {
-    return compactableIndex;
-  }
-
   public void setCompactableIndex(final long index) {
     this.compactableIndex = index;
   }
